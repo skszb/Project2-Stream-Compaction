@@ -1,7 +1,10 @@
-#include <cstdio>
 #include "cpu.h"
+#include <cstdio>
 
 #include "common.h"
+
+#define SIMULATE_GPU_SCAN 0
+
 
 namespace StreamCompaction {
     namespace CPU {
@@ -19,7 +22,16 @@ namespace StreamCompaction {
          */
         void scan(int n, int *odata, const int *idata) {
             timer().startCpuTimer();
-            // TODO
+#if SIMULATE_GPU_SCAN
+            // placeholder
+#else
+            odata[0] = 0;
+            int sum = 0;
+            for (int i  = 1; i < n; i++) {
+                sum += idata[i-1];
+                odata[i] = sum;
+            }
+#endif
             timer().endCpuTimer();
         }
 
@@ -30,9 +42,24 @@ namespace StreamCompaction {
          */
         int compactWithoutScan(int n, int *odata, const int *idata) {
             timer().startCpuTimer();
-            // TODO
+            int p1 = 0, p2 = 0;
+            int count = 0;
+            for (;p2 < n && p1 < n;)
+            {
+                if (idata[p2] != 0)
+                {
+                    odata[p1] = idata[p2];
+                    p1++;
+                    p2++;
+                    count++;
+                }
+                else
+                {
+                    p2++;
+                }
+            }
             timer().endCpuTimer();
-            return -1;
+            return count;
         }
 
         /**
@@ -41,10 +68,43 @@ namespace StreamCompaction {
          * @returns the number of elements remaining after compaction.
          */
         int compactWithScan(int n, int *odata, const int *idata) {
+            int* valValid = new int[n];
+            int* scanResult = new int[n];
+
             timer().startCpuTimer();
-            // TODO
+
+            // mark valid indices and scan
+            for (int i = 0; i < n; i++)
+            {
+                valValid[i] = idata[i] > 0 ? 1 : 0;
+            }
+
+            scanResult[0] = 0;
+            int sum = 0;
+            for (int i = 1; i < n; i++)
+            {
+                sum += valValid[i - 1];
+                scanResult[i] = sum;
+            }
+
+            // compact
+            int count = 0;
+            for (int i = 0; i < n; i++)
+            {
+                int val = idata[i];
+                if (val > 0)
+                {
+                    int oIdx = scanResult[i];
+                    odata[oIdx] = val;
+                    count++;
+                }
+            }
+
             timer().endCpuTimer();
-            return -1;
+
+            delete[] valValid;
+            delete[] scanResult;
+            return count;
         }
     }
 }

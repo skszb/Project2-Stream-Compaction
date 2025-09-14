@@ -13,12 +13,13 @@
 #include <stream_compaction/thrust.h>
 #include "testing_helpers.hpp"
 
-const int SIZE = 1 << 8; // feel free to change the size of array
+const int SIZE = 1 << 22; // feel free to change the size of array
 const int NPOT = SIZE - 3; // Non-Power-Of-Two
 int *a = new int[SIZE];
 int *b = new int[SIZE];
 int *c = new int[SIZE];
 
+#define TEST_ITERATIONS 10
 int main(int argc, char* argv[]) {
     // Scan tests
 
@@ -34,6 +35,9 @@ int main(int argc, char* argv[]) {
     // initialize b using StreamCompaction::CPU::scan you implement
     // We use b for further comparison. Make sure your StreamCompaction::CPU::scan is correct.
     // At first all cases passed because b && c are all zeroes.
+    
+    float t;
+
     zeroArray(SIZE, b);
     printDesc("cpu scan, power-of-two");
     StreamCompaction::CPU::scan(SIZE, b, a);
@@ -42,30 +46,38 @@ int main(int argc, char* argv[]) {
 
     zeroArray(SIZE, c);
     printDesc("cpu scan, non-power-of-two");
-    StreamCompaction::CPU::scan(NPOT, c, a);
-    printElapsedTime(StreamCompaction::CPU::timer().getCpuElapsedTimeForPreviousOperation(), "(std::chrono Measured)");
+    // StreamCompaction::CPU::scan(NPOT, c, a);
+    t = testForIterations(TEST_ITERATIONS, &PerformanceTimer::getCpuElapsedTimeForPreviousOperation, StreamCompaction::CPU::timer(), StreamCompaction::CPU::scan, NPOT, c, a);
+    printElapsedTime(t, "(std::chrono Measured)");
+
     printArray(NPOT, c, true);
     printCmpResult(NPOT, b, c);
 
-    zeroArray(SIZE, c);
     printDesc("naive scan, power-of-two");
+    
+    zeroArray(SIZE, c);
     StreamCompaction::Naive::scan(SIZE, c, a);
-    printElapsedTime(StreamCompaction::Naive::timer().getGpuElapsedTimeForPreviousOperation(), "(CUDA Measured)");
-    //printArray(SIZE, c, true);
+    t = testForIterations(TEST_ITERATIONS, &PerformanceTimer::getGpuElapsedTimeForPreviousOperation, StreamCompaction::Naive::timer(), StreamCompaction::Naive::scan, SIZE, c, a);
+    printElapsedTime(t, "(CUDA Measured)");
+    // printArray(SIZE, c, true);
     printCmpResult(SIZE, b, c);
 
-    /* For bug-finding only: Array of 1s to help find bugs in stream compaction or scan
-    onesArray(SIZE, c);
+
+
+    /* For bug-finding only: Array of 1s to help find bugs in stream compaction or scan */
+    /*onesArray(SIZE, c);
     printDesc("1s array for finding bugs");
-    StreamCompaction::Naive::scan(SIZE, c, a);
-    printArray(SIZE, c, true); */
+    StreamCompaction::Naive::scan(SIZE, c, c);
+    printArray(SIZE, c, true);*/
 
     zeroArray(SIZE, c);
     printDesc("naive scan, non-power-of-two");
     StreamCompaction::Naive::scan(NPOT, c, a);
     printElapsedTime(StreamCompaction::Naive::timer().getGpuElapsedTimeForPreviousOperation(), "(CUDA Measured)");
-    //printArray(SIZE, c, true);
+    printArray(NPOT, c, true);
     printCmpResult(NPOT, b, c);
+
+    return 0;
 
     zeroArray(SIZE, c);
     printDesc("work-efficient scan, power-of-two");
@@ -151,4 +163,9 @@ int main(int argc, char* argv[]) {
     delete[] a;
     delete[] b;
     delete[] c;
+
+    // test outputs
+    for (int i = 0; i < 10; i++) {
+        printf("%d\t", ilog2ceil(i));
+    }
 }

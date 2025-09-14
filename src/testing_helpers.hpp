@@ -74,3 +74,16 @@ void printElapsedTime(T time, std::string note = "")
 {
     std::cout << "   elapsed time: " << time << "ms    " << note << std::endl;
 }
+
+using StreamCompaction::Common::PerformanceTimer;
+float testForIterations(int iteration, float(PerformanceTimer::*checkTimer)(), PerformanceTimer& timer, void(*f)(int, int*, const int*), int n, int *odata, const int *idata)
+{
+    float t = 0;
+    for (int i = 0; i < iteration; i++)
+    {
+        f(n, odata, idata);
+        t += (timer.*checkTimer)();
+    }
+    t /= static_cast<float>(iteration);
+    return t;
+}

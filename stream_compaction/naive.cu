@@ -11,7 +11,7 @@ namespace StreamCompaction {
             static PerformanceTimer timer;
             return timer;
         }
-        // TODO: __global__
+
         __global__ void kernInclusiveScan(int n, int d, int* odata, const int *idata)
         {
             int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -36,7 +36,6 @@ namespace StreamCompaction {
          */
         void scan(int n, int *odata, const int *idata)
         {
-            
             const int maxDepth = ilog2ceil(n);
             const int paddedBufSize = 1 << maxDepth;
             const int threadsPerBlock = 256;
@@ -74,6 +73,7 @@ namespace StreamCompaction {
             cudaFree(dev_buf1);
             cudaFree(dev_buf2);
 
+            cudaDeviceSynchronize();
         }
     }
 }

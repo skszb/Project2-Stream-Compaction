@@ -37,6 +37,7 @@ namespace StreamCompaction {
         __global__ void kernScatter(int n, int *odata,
                 const int *idata, const int *bools, const int *indices);
 
+        void testKernMapToBoolean(int n, int* oData, const int* idata);
         /**
         * This class is used for timing the performance
         * Uncopyable and unmovable

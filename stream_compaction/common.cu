@@ -22,8 +22,12 @@ namespace StreamCompaction {
          * Maps an array to an array of 0s and 1s for stream compaction. Elements
          * which map to 0 will be removed, and elements which map to 1 will be kept.
          */
-        __global__ void kernMapToBoolean(int n, int *bools, const int *idata) {
-            // TODO
+        __global__ void kernMapToBoolean(int n, int *bools, const int *idata)
+        {
+            int idx = threadIdx.x + (blockIdx.x * blockDim.x);
+            if (idx >= n) { return; }
+
+            bools[idx] = (idata[idx] > 0) ? 1 : 0;
         }
 
         /**
@@ -31,9 +35,34 @@ namespace StreamCompaction {
          * if bools[idx] == 1, it copies idata[idx] to odata[indices[idx]].
          */
         __global__ void kernScatter(int n, int *odata,
-                const int *idata, const int *bools, const int *indices) {
-            // TODO
+                const int *idata, const int *bools, const int *indices)
+        {
+            int idx = threadIdx.x + (blockIdx.x * blockDim.x);
+            if (idx >= n) { return; }
+
+            if (bools[idx] > 0) 
+            {
+                int oIdx = indices[idx];
+                odata[oIdx] = idata[idx];
+            }
         }
 
+        void testKernMapToBoolean(int n, int*oData, const int* idata)
+        {
+            int blocks = (n + 32 - 1) / 32;
+            int *dev_oData,
+                *dev_iData;
+            cudaMalloc(&dev_oData, n * sizeof(int));
+            cudaMalloc(&dev_iData, n * sizeof(int));
+            cudaMemcpy(dev_iData, idata, n * sizeof(int), cudaMemcpyHostToDevice);
+
+            kernMapToBoolean <<< dim3(blocks), dim3(32) >>> (n, dev_oData, dev_iData);
+            cudaMemcpy(oData, dev_oData, n * sizeof(int), cudaMemcpyDeviceToHost);
+
+            cudaFree(dev_oData);
+            cudaFree(dev_iData);
+        }
+
+        
     }
 }

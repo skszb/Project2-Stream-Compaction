@@ -60,7 +60,7 @@ void genArray(int n, int *a, int maxval) {
 void printArray(int n, int *a, bool abridged = false) {
     printf("    [ ");
     for (int i = 0; i < n; i++) {
-        if (abridged && i + 2 == 15 && n > 16) {
+        if (abridged && i + 2 == 5 && n > 16) {
             i = n - 2;
             printf("... ");
         }
@@ -76,12 +76,13 @@ void printElapsedTime(T time, std::string note = "")
 }
 
 using StreamCompaction::Common::PerformanceTimer;
-float testForIterations(int iteration, float(PerformanceTimer::*checkTimer)(), PerformanceTimer& timer, void(*f)(int, int*, const int*), int n, int *odata, const int *idata)
+template<typename TimerFuncType, typename FuncType, typename... Args>
+float testForIterations(int iteration, TimerFuncType checkTimer, PerformanceTimer& timer, FuncType f, Args... args)
 {
     float t = 0;
     for (int i = 0; i < iteration; i++)
     {
-        f(n, odata, idata);
+        f(args...);
         t += (timer.*checkTimer)();
     }
     t /= static_cast<float>(iteration);
